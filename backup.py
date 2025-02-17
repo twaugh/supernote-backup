@@ -1,7 +1,9 @@
 #!/usr/bin/python
 import logging
+import os
 import subprocess
 import sys
+import tempfile
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -17,23 +19,28 @@ class Supernote(object):
     def file_list(self, directory=0):
         return supernote.file_list(self._token, directory)
 
+    def download_file(self, ident, filename):
+        return supernote.download_file(self._token, ident, filename)
 
-def get_file_tree(sn, file_list):
-    file_tree = {}
+
+def recurse_file_tree(sn, file_list):
     for entry in file_list:
-        fileName = entry['fileName']
-        if entry['isFolder'] == 'Y':
+        fileName = entry["fileName"]
+        if entry["isFolder"] == "Y":
+            try:
+                os.mkdir(fileName)
+            except FileExistsError:
+                pass
+
+            os.chdir(fileName)
             log.debug(f"recurse into {fileName}")
-            subdir = sn.file_list(directory=entry['id'])
-            file_tree[fileName] = {
-                'type': 'folder',
-                'contents': get_file_tree(sn, subdir),
-            }
+            subdir = sn.file_list(directory=entry["id"])
+            recurse_file_tree(sn, subdir)
         else:
-            file_tree[fileName] = {
-                'type': 'file',
-            }
-    return file_tree
+            log.debug(f"download {fileName}")
+            with tempfile.NamedTemporaryFile(dir=".", delete=False) as tmpf:
+                sn.download_file(entry["id"], tmpf.name)
+                os.rename(tmpf.name, fileName)
 
 
 def main():
@@ -50,11 +57,9 @@ def main():
         log.error(stderr)
     password = stdout.splitlines()[0].decode()
     sn = Supernote(username, password)
-    
-    top = sn.file_list()
-    file_tree = get_file_tree(sn, top)
-    print(file_tree)
 
+    top = sn.file_list()
+    recurse_file_tree(sn, top)
 
 
 if __name__ == "__main__":
