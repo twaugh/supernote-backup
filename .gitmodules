@@ -1,0 +1,4 @@
+[submodule "supernote-cloud-python"]
+	path = supernote-cloud-python
+	url = https://github.com/twaugh/supernote-cloud-python.git
+	branch = error-handling
