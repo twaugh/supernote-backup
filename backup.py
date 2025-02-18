@@ -10,8 +10,8 @@ import urllib.parse
 
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger()
-sys.path.append("./supernote-cloud-python")
+log = logging.getLogger(__name__)
+sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), "supernote-cloud-python"))
 import supernote
 
 
