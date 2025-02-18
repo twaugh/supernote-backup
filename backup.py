@@ -16,12 +16,13 @@ import supernote
 class Supernote(object):
     def __init__(self, username, password):
         self._token = supernote.login(username, password)
-        self._id_to_path = {
-            0: "",
-        }
-        self._path_to_id = {
-            "": 0,
-        }
+
+        # Cache the mapping between identifiers and full paths
+        self._id_to_path = {}
+        self._path_to_id = {}
+        self._cache_id("", 0)
+
+        # Also cache file information
         self._id_to_stat = {}
 
     def _cache_id(self, path, ident):
@@ -42,7 +43,7 @@ class Supernote(object):
                     os.path.join(current_path, entry["fileName"]), entry["id"]
                 )
 
-        # Cache stat info
+        # Cache file information
         for entry in entries:
             self._id_to_stat[int(entry["id"])] = {
                 key: entry[key] for key in ("size", "md5", "createTime", "updateTime")
