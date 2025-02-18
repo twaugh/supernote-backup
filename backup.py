@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import hashlib
 import logging
 import os
 import subprocess
@@ -21,6 +22,7 @@ class Supernote(object):
         self._path_to_id = {
             "": 0,
         }
+        self._id_to_stat = {}
 
     def _cache_id(self, path, ident):
         ident = int(ident)
@@ -40,7 +42,19 @@ class Supernote(object):
                     os.path.join(current_path, entry["fileName"]), entry["id"]
                 )
 
+        # Cache stat info
+        for entry in entries:
+            self._id_to_stat[int(entry["id"])] = {
+                key: entry[key] for key in ("size", "md5", "createTime", "updateTime")
+            }
+
         return entries
+
+    def stat(self, path=None, ident=0):
+        if path is not None:
+            ident = self._path_to_id[path]
+
+        return self._id_to_stat[int(ident)]
 
     def download_file(self, filename, path=None, ident=0):
         if path is not None:
@@ -80,6 +94,56 @@ class Supernote(object):
             yield from self.walk(ident=folder["id"])
 
 
+def calculate_md5sum(filename):
+    md5 = hashlib.md5()
+    with open(filename, "rb") as fp:
+        while True:
+            data = fp.read()
+            if not data:
+                break
+
+            md5.update(data)
+
+    return md5.hexdigest()
+
+
+def sync(sn, destdir):
+    # mkdir -p
+    components = os.path.split(destdir)
+    for ncomp in range(len(components)):
+        dir = os.path.join(*components[: ncomp + 1])
+        if not dir:
+            continue
+        try:
+            os.mkdir(dir)
+        except FileExistsError:
+            pass
+
+    for path, dirs, files in sn.walk():
+        if path:
+            try:
+                os.mkdir(os.path.join(destdir, path))
+            except FileExistsError:
+                pass
+
+        for file in files:
+            filename = os.path.join(path, file)
+            stat = sn.stat(filename)
+            destfile = os.path.join(destdir, filename)
+            if "md5" in stat:
+                try:
+                    md5sum = calculate_md5sum(destfile)
+                except FileNotFoundError:
+                    pass
+                else:
+                    if stat["md5"] == md5sum:
+                        log.info(f"{filename} already up to date locally")
+                        continue
+
+            log.info(f"Downloading {filename}")
+            sn.download_file(destfile, path=filename)
+
+
 def main():
     username = sys.argv[1]
     destdir = sys.argv[2]
@@ -95,26 +159,7 @@ def main():
         log.error(stderr)
     password = stdout.splitlines()[0].decode()
     sn = Supernote(username, password)
-
-    # mkdir -p
-    components = os.path.split(destdir)
-    for ncomp in range(len(components)):
-        dir = os.path.join(*components[: ncomp + 1])
-        if not dir:
-            continue
-        try:
-            os.mkdir(dir)
-        except FileExistsError:
-            pass
-
-    for path, dirs, files in sn.walk():
-        if path:
-            os.mkdir(os.path.join(destdir, path))
-
-        for file in files:
-            filename = os.path.join(path, file)
-            log.info(f"Downloading {filename}")
-            sn.download_file(os.path.join(destdir, filename), path=filename)
+    sync(sn, destdir)
 
 
 if __name__ == "__main__":
