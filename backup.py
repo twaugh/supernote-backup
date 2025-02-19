@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import SupernoteCloud
+import humanize
 
 
 def calculate_md5sum(filename):
@@ -49,10 +50,12 @@ def sync(sn, destdir):
                     pass
                 else:
                     if stat["md5"] == md5sum:
-                        print(f"Up to date: {filename}")
+                        print(f"✅ Up to date: {filename}")
                         continue
 
-            print(f"Downloading: {filename}")
+            metadata = sn.stat_path(filename)
+            size = humanize.naturalsize(metadata.get("size", 0), binary=True)
+            print(f"🌟 Downloading ({size}): {filename}")
             sn.download_file_path(filename, destfile)
 
 
