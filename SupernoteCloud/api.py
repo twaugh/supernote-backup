@@ -73,7 +73,8 @@ class Client(object):
         # Cache file information
         for entry in entries:
             self._id_to_stat[int(entry["id"])] = {
-                key: entry[key] for key in ("id", "size", "md5", "createTime", "updateTime")
+                key: entry[key]
+                for key in ("id", "size", "md5", "createTime", "updateTime")
             }
 
         return entries
