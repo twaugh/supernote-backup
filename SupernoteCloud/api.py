@@ -138,7 +138,8 @@ class Client(object):
         This behaves similarly to os.path.walk(path).
 
         For each folder in the cloud account rooted at the given path (and
-        including that path), yield a 3-tuple:
+        including that path), yield a 3-tuple::
+
           folder_path, folder_names, file_names
 
         folder_path is a string, the full path to the folder. Each folder
@@ -148,15 +149,15 @@ class Client(object):
 
         The caller can modify the folder_names in-place to remove entries. This
         will prevent those folders from being opened. For example, to show
-        everything except the contents of the top-level Note folder:
+        everything except the contents of the top-level Note folder::
 
-        for folder_path, folder_names, file_names in client.walk():
-            for folder_name in folder_names:
-                print(os.path.join(folder_path, folder_name) + '/')
-            for file_name in file_names:
-                print(os.path.join(folder_path, file_name))
-            if folder_path == "" and 'Note' in folder_names:
-                folder_names.remove('Note')
+            for folder_path, folder_names, file_names in client.walk():
+                for folder_name in folder_names:
+                    print(os.path.join(folder_path, folder_name) + '/')
+                for file_name in file_names:
+                    print(os.path.join(folder_path, file_name))
+                if folder_path == "" and 'Note' in folder_names:
+                    folder_names.remove('Note')
         """
 
         try:
@@ -177,7 +178,8 @@ class Client(object):
         indicated by the identifier ident.
 
         For each folder in the cloud account rooted at the given identifier
-        (and including that path), yield a 3-tuple:
+        (and including that path), yield a 3-tuple::
+
           folder_path, folder_names, file_names
 
         folder_path is a string, the full path to the folder. Each folder
@@ -223,7 +225,8 @@ class Client(object):
         This behaves similarly to os.path.walk().
 
         For each folder in the cloud account rooted at the given path (and
-        including that path), yield a 3-tuple:
+        including that path), yield a 3-tuple::
+
           folder_path, folder_names, file_names
 
         folder_path is a string, the full path to the folder. Each folder
