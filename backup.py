@@ -32,14 +32,28 @@ def sync(sn, destdir):
         except FileExistsError:
             pass
 
-    for path, dirs, files in sn.walk():
+    local_files = []
+    local_dirs = []
+    for dirpath, dirnames, filenames in os.walk(destdir):
+        dirpath = os.path.relpath(dirpath, destdir)
+        if dirpath == ".":
+            dirpath = ""
+
+        local_dirs.append(dirpath)
+        local_files.extend(os.path.join(dirpath, filename) for filename in filenames)
+
+    remote_files = []
+    remote_dirs = []
+    for path, _, filenames in sn.walk():
+        remote_dirs.append(path)
+        remote_files.extend(os.path.join(path, filename) for filename in filenames)
         if path:
             try:
                 os.mkdir(os.path.join(destdir, path))
             except FileExistsError:
                 pass
 
-        for file in files:
+        for file in filenames:
             filename = os.path.join(path, file)
             stat = sn.stat_path(filename)
             destfile = os.path.join(destdir, filename)
@@ -57,6 +71,14 @@ def sync(sn, destdir):
             size = humanize.naturalsize(metadata.get("size", 0), binary=True)
             print(f"🌟 Downloading ({size}): {filename}")
             sn.download_file_path(filename, destfile)
+
+    for excess_file in sorted(list(set(local_files) - set(remote_files))):
+        os.remove(os.path.join(destdir, excess_file))
+        print(f"🧹 Removed file: {excess_file}")
+
+    for excess_dir in sorted(list(set(local_dirs) - set(remote_dirs)), reverse=True):
+        os.rmdir(os.path.join(destdir, excess_dir))
+        print(f"🧹 Removed dir: {excess_dir}")
 
 
 def main():
